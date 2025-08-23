@@ -1,8 +1,13 @@
 import { drizzle } from "drizzle-orm/neon-http"
 import { neon } from "@neondatabase/serverless"
-import { config } from "dotenv"
 
-config({ path: ".env" })
+if (typeof window === "undefined") {
+  require("dotenv").config({ path: ".env.local" })
+}
 
-const sql = neon(process.env.DATABASE_URL!)
+const dbUrl = process.env.DATABASE_URL
+
+if (!dbUrl) console.error(`DATABASE_URL doesn't exist`)
+
+const sql = neon(dbUrl)
 export const db = drizzle({ client: sql })
