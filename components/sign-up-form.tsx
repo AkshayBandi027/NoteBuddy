@@ -22,17 +22,14 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 
-// import { signUp } from "@/server/users";
-
 import { z } from "zod"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
 import { Loader2 } from "lucide-react"
 import { authClient } from "@/lib/auth/client"
+import { signUp } from "@/app/actions/auth"
 import Link from "next/link"
-import { useMutation, useMutationState } from "@tanstack/react-query"
-import { auth } from "@/lib/auth"
+import { useMutation } from "@tanstack/react-query"
 
 const formSchema = z.object({
   username: z.string().min(3),
@@ -48,13 +45,14 @@ export function SignupForm({
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
-      await auth.api.signUpEmail({
-        body: {
-          email: values.email,
-          password: values.password,
-          name: values.username,
-        },
-      })
+      await signUp(values)
+      // await auth.api.signUpEmail({
+      //   body: {
+      //     email: values.email,
+      //     password: values.password,
+      //     name: values.username,
+      //   },
+      // })
     },
     onSuccess: () => {
       toast.success("Account created Successfully")
