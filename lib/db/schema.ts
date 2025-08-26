@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, boolean, uuid, json, jsonb } from "drizzle-orm/pg-core"
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -66,7 +66,7 @@ export const note = pgTable("note", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   title: text("title"),
-  description: text("description"),
+  description: jsonb("description"),
   createdAt: timestamp("created_at").$defaultFn(
     () => /* @__PURE__ */ new Date(),
   ),

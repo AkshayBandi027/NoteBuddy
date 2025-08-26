@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import { getNotes } from "../actions/notes"
 import { SkeletonCard } from "@/components/skeleton-card"
 import AddNote from "./add-note"
+import Link from "next/link"
 
 export default async function Page() {
   const notes = await getNotes()
@@ -20,17 +21,18 @@ export default async function Page() {
       <Suspense fallback={<LoadingSkeleton />}>
         <div className="flex flex-wrap items-center justify-start gap-4 px-4 py-2">
           {notes.map(note => (
-            <div
-              key={note.id}
-              className="border-b-muted hover:bg-accent/30 cursor-pointer rounded-xs border-1 p-4 hover:shadow-md"
-            >
-              <h3 className="text-md font-semibold">
-                {note.title || "Untitled"}
-              </h3>
-              <p className="text-muted-foreground mt-2 text-sm">
-                {note.description || "No description"}
-              </p>
-            </div>
+            <Link href={`/dashboard/notes/${note.id}`} key={note.id}>
+              <div
+                key={note.id}
+                className="border-b-muted hover:bg-accent/30 cursor-pointer rounded-xs border-1 p-4 hover:shadow-md"
+              >
+                <h3 className="text-md font-semibold">
+                  {note.title || "Untitled"}
+                </h3>
+
+                <p dangerouslySetInnerHTML={{ __html: note.description as string  }}></p>
+              </div>
+            </Link>
           ))}
         </div>
       </Suspense>
