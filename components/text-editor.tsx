@@ -12,6 +12,8 @@ import { debounce } from "@/lib/utils"
 import Document from "@tiptap/extension-document"
 import Paragraph from "@tiptap/extension-paragraph"
 import Text from "@tiptap/extension-text"
+import { OrderedList, ListItem, BulletList } from "@tiptap/extension-list"
+import Heading from "@tiptap/extension-heading"
 import {
   EditorContent,
   useEditor,
@@ -42,82 +44,31 @@ const debounceUpdate = debounce((content: string, noteId: string) => {
 
 const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
   const editor = useEditor({
-    extensions: [StarterKit, Document, Paragraph, Text],
+    extensions: [
+      StarterKit,
+      Document,
+      Paragraph,
+      Text,
+      OrderedList,
+      ListItem,
+      Heading.configure({
+        levels: [1, 2, 3],
+      }),
+      BulletList,
+    ],
     immediatelyRender: false,
     autofocus: true,
     editable: true,
     injectCSS: false,
     onUpdate: ({ editor }) => {
       const content = editor.getHTML()
-      debounceUpdate(content, noteId)
+      if (noteId) {
+        debounceUpdate(content, noteId)
+      }
     },
     content: content ?? {
       type: "doc",
-      content: [
-        {
-          type: "heading",
-          attrs: { level: 1 },
-          content: [{ type: "text", text: "Getting started" }],
-        },
-        {
-          type: "paragraph",
-          content: [
-            { type: "text", text: "Welcome to the " },
-            {
-              type: "text",
-              text: "Simple Editor",
-              marks: [{ type: "italic" }],
-            },
-            { type: "text", text: " template! This template integrates " },
-            { type: "text", text: "open source", marks: [{ type: "bold" }] },
-            {
-              type: "text",
-              text: " UI components and Tiptap extensions licensed under ",
-            },
-            { type: "text", text: "MIT", marks: [{ type: "bold" }] },
-            { type: "text", text: "." },
-          ],
-        },
-        {
-          type: "paragraph",
-          content: [
-            { type: "text", text: "Integrate it by following the " },
-            {
-              type: "text",
-              text: "Tiptap UI Components docs",
-              marks: [{ type: "code" }],
-            },
-            { type: "text", text: " or using our CLI tool." },
-          ],
-        },
-        {
-          type: "codeBlock",
-          content: [{ type: "text", text: "npx @tiptap/cli init" }],
-        },
-        {
-          type: "heading",
-          attrs: { level: 2 },
-          content: [{ type: "text", text: "Features" }],
-        },
-        {
-          type: "blockquote",
-          content: [
-            {
-              type: "paragraph",
-              content: [
-                {
-                  type: "text",
-                  text: "A fully responsive rich text editor with built-in support for common formatting and layout tools. Type markdown ",
-                },
-                { type: "text", text: "**", marks: [{ type: "bold" }] },
-                { type: "text", text: " or use keyboard shortcuts " },
-                { type: "text", text: "⌘+B", marks: [{ type: "code" }] },
-                { type: "text", text: " for most all common markdown marks." },
-              ],
-            },
-          ],
-        },
-      ],
+      content: [],
     },
   })
 
@@ -135,11 +86,42 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
         isCode: ctx.editor?.isActive("code"),
         canCode: ctx.editor?.can().chain().focus().toggleCode().run(),
         isParagraph: ctx.editor?.isActive("paragraph"),
+        canParagraph: ctx.editor?.can().chain().focus().setParagraph().run(),
         isHeading1: ctx.editor?.isActive("heading", { level: 1 }),
+        canHeading1: ctx.editor
+          ?.can()
+          .chain()
+          .focus()
+          .setHeading({ level: 1 })
+          .run(),
         isHeading2: ctx.editor?.isActive("heading", { level: 2 }),
+        canHeading2: ctx.editor
+          ?.can()
+          .chain()
+          .focus()
+          .setHeading({ level: 2 })
+          .run(),
         isHeading3: ctx.editor?.isActive("heading", { level: 3 }),
+        canHeading3: ctx.editor
+          ?.can()
+          .chain()
+          .focus()
+          .setHeading({ level: 3 })
+          .run(),
         isBulletList: ctx.editor?.isActive("bulletList"),
+        canBulletList: ctx.editor
+          ?.can()
+          .chain()
+          .focus()
+          .toggleBulletList()
+          .run(),
         isOrderedList: ctx.editor?.isActive("orderedList"),
+        canOrderedList: ctx.editor
+          ?.can()
+          .chain()
+          .focus()
+          .toggleOrderedList()
+          .run(),
         isCodeBlock: ctx.editor?.isActive("codeBlock"),
         isBlockquote: ctx.editor?.isActive("blockquote"),
         canUndo: ctx.editor?.can().chain().focus().undo().run(),
@@ -152,29 +134,43 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
     if (editorState?.isHeading1) return "H1"
     if (editorState?.isHeading2) return "H2"
     if (editorState?.isHeading3) return "H3"
-    return "H1"
+    if (editorState?.isParagraph) return "P"
+    return "P"
+  }
+
+  
+  const getButtonClass = (isActive: boolean) => {
+    return `size-8 p-0 transition-colors ${
+      isActive
+        ? "bg-blue-800 text-white hover:bg-blue-700"
+        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+    }`
+  }
+
+  if (!editor) {
+    return <div>Loading editor...</div>
   }
 
   return (
-    <div className="text-card-foreground flex w-full max-w-7xl flex-1 flex-col overflow-hidden border bg-black">
+    <div className="text-card-foreground  flex w-full max-w-7xl flex-1 flex-col overflow-hidden border bg-black">
       {/* Toolbar */}
       <div className="bg-muted/20 flex items-center gap-1 border-b p-2">
         {/* Undo/Redo */}
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor?.chain().focus().undo().run()}
-          disabled={!editorState?.canUndo}
-          className="text-muted-foreground hover:text-foreground hover:bg-accent size-8 p-0"
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+          className="text-muted-foreground hover:text-foreground hover:bg-accent size-8 p-0 disabled:opacity-50"
         >
           <Undo className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor?.chain().focus().redo().run()}
-          disabled={!editorState?.canRedo}
-          className="text-muted-foreground hover:text-foreground hover:bg-accent size-8 p-0"
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+          className="text-muted-foreground hover:text-foreground hover:bg-accent size-8 p-0 disabled:opacity-50"
         >
           <Redo className="h-4 w-4" />
         </Button>
@@ -185,52 +181,36 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-          disabled={!editorState?.canBold}
-          className={`hover:bg-accent size-8 p-0 ${
-            editorState?.isBold
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          disabled={!editor.can().chain().focus().toggleBold().run()}
+          className={getButtonClass(editor.isActive("bold"))}
         >
           <Bold className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-          disabled={!editorState?.canItalic}
-          className={`hover:bg-accent size-8 p-0 ${
-            editorState?.isItalic
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          disabled={!editor.can().chain().focus().toggleItalic().run()}
+          className={getButtonClass(editor.isActive("italic"))}
         >
           <Italic className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor?.chain().focus().toggleStrike().run()}
-          disabled={!editorState?.canStrike}
-          className={`hover:bg-accent size-8 p-0 ${
-            editorState?.isStrike
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          disabled={!editor.can().chain().focus().toggleStrike().run()}
+          className={getButtonClass(editor.isActive("strike"))}
         >
           <Strikethrough className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor?.chain().focus().toggleCode().run()}
-          disabled={!editorState?.canCode}
-          className={`hover:bg-accent size-8 p-0 ${
-            editorState?.isCode
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          disabled={!editor.can().chain().focus().toggleCode().run()}
+          className={getButtonClass(editor.isActive("code"))}
         >
           <Code className="h-4 w-4" />
         </Button>
@@ -252,31 +232,39 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
           <DropdownMenuContent className="bg-popover border">
             <DropdownMenuItem
               onClick={() =>
-                editor?.chain().focus().toggleHeading({ level: 1 }).run()
+                editor.chain().focus().setHeading({ level: 1 }).run()
               }
-              className="text-popover-foreground hover:bg-accent hover:text-accent-foreground"
+              className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                editor.isActive("heading", { level: 1 }) ? "bg-blue-600 text-white" : ""
+              }`}
             >
               Heading 1
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
-                editor?.chain().focus().toggleHeading({ level: 2 }).run()
+                editor.chain().focus().setHeading({ level: 2 }).run()
               }
-              className="text-popover-foreground hover:bg-accent hover:text-accent-foreground"
+              className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                editor.isActive("heading", { level: 2 }) ? "bg-blue-600 text-white" : ""
+              }`}
             >
               Heading 2
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
-                editor?.chain().focus().toggleHeading({ level: 3 }).run()
+                editor.chain().focus().setHeading({ level: 3 }).run()
               }
-              className="text-popover-foreground hover:bg-accent hover:text-accent-foreground"
+              className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                editor.isActive("heading", { level: 3 }) ? "bg-blue-600 text-white" : ""
+              }`}
             >
               Heading 3
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => editor?.chain().focus().setParagraph().run()}
-              className="text-popover-foreground hover:bg-accent hover:text-accent-foreground"
+              onClick={() => editor.chain().focus().setParagraph().run()}
+              className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                editor.isActive("paragraph") ? "bg-blue-600 text-white" : ""
+              }`}
             >
               Paragraph
             </DropdownMenuItem>
@@ -287,24 +275,18 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
-          className={`hover:bg-accent size-8 p-0 ${
-            editorState?.isBulletList
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          disabled={!editor.can().chain().focus().toggleBulletList().run()}
+          className={getButtonClass(editor.isActive("bulletList"))}
         >
           <List className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-          className={`hover:bg-accent size-8 p-0 ${
-            editorState?.isOrderedList
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          disabled={!editor.can().chain().focus().toggleOrderedList().run()}
+          className={getButtonClass(editor.isActive("orderedList"))}
         >
           <ListOrdered className="h-4 w-4" />
         </Button>
