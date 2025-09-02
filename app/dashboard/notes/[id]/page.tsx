@@ -13,13 +13,14 @@ export default async function NotePage({ params }: { params: Params }) {
   const note = await getNoteById(noteId)
 
   const jsonDescription = note?.description as JSONContent[]
-   
 
   return (
     <div className="flex h-full w-full flex-col gap-4">
-      <Suspense fallback={<Loading />}>
-        <RichTextEditor noteId={noteId} content={jsonDescription} />
-      </Suspense>
+      <div className="max-w-3xl flex-1 flex flex-col">
+        <Suspense fallback={<Loading />}>
+          <RichTextEditor noteId={noteId} content={jsonDescription} />
+        </Suspense>
+      </div>
     </div>
   )
 }

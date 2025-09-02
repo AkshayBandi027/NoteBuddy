@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { debounce } from "@/lib/utils"
+import { useCompletion } from "@ai-sdk/react"
 import { Extension } from "@tiptap/core"
 import {
   EditorContent,
@@ -28,8 +29,7 @@ import {
   Strikethrough,
   Undo,
 } from "lucide-react"
-import { useCompletion } from "@ai-sdk/react"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 interface RichTextEditorProps {
   content?: JSONContent[]
@@ -41,6 +41,7 @@ const debounceUpdate = debounce((content: string, noteId: string) => {
 }, 500)
 
 const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
+  const [summary, setSummary] = useState("")
   const { complete, completion } = useCompletion({
     api: `http://localhost:3000/api/completion`,
   })
@@ -157,6 +158,22 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
     }`
   }
 
+  const summarize = async () => {
+    const content = editor?.getText()
+
+    const result = await fetch(`/api/summarize`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content,
+      }),
+    })
+    const response = await result.json()
+    setSummary(response.summary)
+  }
+
   const lastCompletion = useRef("")
 
   useEffect(() => {
@@ -170,153 +187,162 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
     return <div>Loading editor...</div>
   }
 
+  console.log(`summary --`, summary)
+
   return (
-    <div className="text-card-foreground flex w-full max-w-7xl flex-1 flex-col overflow-hidden border bg-black">
+    <div className="text-card-foreground flex w-full max-w-7xl flex-1 flex-col overflow-hidden rounded-xs border bg-black">
       {/* Toolbar */}
-      <div className="bg-muted/20 flex items-center gap-1 border-b p-2">
-        {/* Undo/Redo */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().undo().run()}
-          disabled={!editor.can().undo()}
-          className="text-muted-foreground hover:text-foreground hover:bg-accent size-8 p-0 disabled:opacity-50"
-        >
-          <Undo className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().redo().run()}
-          disabled={!editor.can().redo()}
-          className="text-muted-foreground hover:text-foreground hover:bg-accent size-8 p-0 disabled:opacity-50"
-        >
-          <Redo className="h-4 w-4" />
-        </Button>
 
-        <div className="bg-border mx-1 h-6 w-px" />
+      <div className="flex items-center justify-between border-b">
+        <div className="bg-muted/20 flex items-center gap-1 border-b p-2">
+          {/* Undo/Redo */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().undo()}
+            className="text-muted-foreground hover:text-foreground hover:bg-accent size-8 p-0 disabled:opacity-50"
+          >
+            <Undo className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().redo()}
+            className="text-muted-foreground hover:text-foreground hover:bg-accent size-8 p-0 disabled:opacity-50"
+          >
+            <Redo className="h-4 w-4" />
+          </Button>
 
-        {/* Text Formatting */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          disabled={!editor.can().chain().focus().toggleBold().run()}
-          className={getButtonClass(editor.isActive("bold"))}
-        >
-          <Bold className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          disabled={!editor.can().chain().focus().toggleItalic().run()}
-          className={getButtonClass(editor.isActive("italic"))}
-        >
-          <Italic className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          disabled={!editor.can().chain().focus().toggleStrike().run()}
-          className={getButtonClass(editor.isActive("strike"))}
-        >
-          <Strikethrough className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleCode().run()}
-          disabled={!editor.can().chain().focus().toggleCode().run()}
-          className={getButtonClass(editor.isActive("code"))}
-        >
-          <Code className="h-4 w-4" />
-        </Button>
+          <div className="bg-border mx-1 h-6 w-px" />
 
-        <div className="bg-border mx-1 h-6 w-px" />
+          {/* Text Formatting */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            disabled={!editor.can().chain().focus().toggleBold().run()}
+            className={getButtonClass(editor.isActive("bold"))}
+          >
+            <Bold className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            disabled={!editor.can().chain().focus().toggleItalic().run()}
+            className={getButtonClass(editor.isActive("italic"))}
+          >
+            <Italic className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+            disabled={!editor.can().chain().focus().toggleStrike().run()}
+            className={getButtonClass(editor.isActive("strike"))}
+          >
+            <Strikethrough className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleCode().run()}
+            disabled={!editor.can().chain().focus().toggleCode().run()}
+            className={getButtonClass(editor.isActive("code"))}
+          >
+            <Code className="h-4 w-4" />
+          </Button>
 
-        {/* Heading Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground hover:bg-accent h-8 gap-1 px-2"
-            >
-              {getActiveHeading()}
-              <ChevronDown className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-popover border">
-            <DropdownMenuItem
-              onClick={() =>
-                editor.chain().focus().setHeading({ level: 1 }).run()
-              }
-              className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
-                editor.isActive("heading", { level: 1 })
-                  ? "bg-blue-600 text-white"
-                  : ""
-              }`}
-            >
-              Heading 1
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                editor.chain().focus().setHeading({ level: 2 }).run()
-              }
-              className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
-                editor.isActive("heading", { level: 2 })
-                  ? "bg-blue-600 text-white"
-                  : ""
-              }`}
-            >
-              Heading 2
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                editor.chain().focus().setHeading({ level: 3 }).run()
-              }
-              className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
-                editor.isActive("heading", { level: 3 })
-                  ? "bg-blue-600 text-white"
-                  : ""
-              }`}
-            >
-              Heading 3
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => editor.chain().focus().setParagraph().run()}
-              className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
-                editor.isActive("paragraph") ? "bg-blue-600 text-white" : ""
-              }`}
-            >
-              Paragraph
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <div className="bg-border mx-1 h-6 w-px" />
 
-        {/* Lists */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          disabled={!editor.can().chain().focus().toggleBulletList().run()}
-          className={getButtonClass(editor.isActive("bulletList"))}
-        >
-          <List className="h-4 w-4" />
+          {/* Heading Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground hover:bg-accent h-8 gap-1 px-2"
+              >
+                {getActiveHeading()}
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-popover border">
+              <DropdownMenuItem
+                onClick={() =>
+                  editor.chain().focus().setHeading({ level: 1 }).run()
+                }
+                className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                  editor.isActive("heading", { level: 1 })
+                    ? "bg-blue-600 text-white"
+                    : ""
+                }`}
+              >
+                Heading 1
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  editor.chain().focus().setHeading({ level: 2 }).run()
+                }
+                className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                  editor.isActive("heading", { level: 2 })
+                    ? "bg-blue-600 text-white"
+                    : ""
+                }`}
+              >
+                Heading 2
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  editor.chain().focus().setHeading({ level: 3 }).run()
+                }
+                className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                  editor.isActive("heading", { level: 3 })
+                    ? "bg-blue-600 text-white"
+                    : ""
+                }`}
+              >
+                Heading 3
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().setParagraph().run()}
+                className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
+                  editor.isActive("paragraph") ? "bg-blue-600 text-white" : ""
+                }`}
+              >
+                Paragraph
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Lists */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            disabled={!editor.can().chain().focus().toggleBulletList().run()}
+            className={getButtonClass(editor.isActive("bulletList"))}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            disabled={!editor.can().chain().focus().toggleOrderedList().run()}
+            className={getButtonClass(editor.isActive("orderedList"))}
+          >
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+
+          <div className="bg-border mx-1 h-6 w-px" />
+        </div>
+
+        <Button variant="outline" className="mr-2" onClick={summarize}>
+          Summarize
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          disabled={!editor.can().chain().focus().toggleOrderedList().run()}
-          className={getButtonClass(editor.isActive("orderedList"))}
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
-
-        <div className="bg-border mx-1 h-6 w-px" />
       </div>
 
       {/* Editor Content */}
@@ -325,6 +351,14 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
           editor={editor}
           className="prose prose-neutral dark:prose-invert [&_.ProseMirror_blockquote]:border-border [&_.ProseMirror_pre]:bg-muted [&_.ProseMirror_code]:bg-muted max-w-none focus:outline-none [&_.ProseMirror]:min-h-96 [&_.ProseMirror]:focus:outline-none [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:px-1 [&_.ProseMirror_h1]:mb-4 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:mb-3 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_p]:mb-4 [&_.ProseMirror_pre]:overflow-x-auto [&_.ProseMirror_pre]:rounded [&_.ProseMirror_pre]:p-4"
         />
+
+        <div className="bg-border h-[1px] w-full" />
+
+        <div>
+          {summary && (
+            <p className="text-muted-foreground mt-4 text-sm">{summary}</p>
+          )}
+        </div>
       </div>
     </div>
   )
