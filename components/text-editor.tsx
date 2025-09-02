@@ -9,11 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { debounce } from "@/lib/utils"
-import Document from "@tiptap/extension-document"
-import Paragraph from "@tiptap/extension-paragraph"
-import Text from "@tiptap/extension-text"
-import { OrderedList, ListItem, BulletList } from "@tiptap/extension-list"
-import Heading from "@tiptap/extension-heading"
+import { Extension } from "@tiptap/core"
 import {
   EditorContent,
   useEditor,
@@ -32,6 +28,8 @@ import {
   Strikethrough,
   Undo,
 } from "lucide-react"
+import { useCompletion } from "@ai-sdk/react"
+import { useEffect, useRef } from "react"
 
 interface RichTextEditorProps {
   content?: JSONContent[]
@@ -43,18 +41,31 @@ const debounceUpdate = debounce((content: string, noteId: string) => {
 }, 500)
 
 const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
+  const { complete, completion } = useCompletion({
+    api: `http://localhost:3000/api/completion`,
+  })
+
+  const customShortcuts = Extension.create({
+    name: "customShortCuts",
+    addKeyboardShortcuts() {
+      return {
+        "Mod-Shift-K": () => {
+          const prompt = this.editor?.getText().split(" ").slice(-30).join(" ")
+          complete(prompt)
+          return true
+        },
+      }
+    },
+  })
+
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Document,
-      Paragraph,
-      Text,
-      OrderedList,
-      ListItem,
-      Heading.configure({
-        levels: [1, 2, 3],
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3],
+        },
       }),
-      BulletList,
+      customShortcuts,
     ],
     immediatelyRender: false,
     autofocus: true,
@@ -138,7 +149,6 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
     return "P"
   }
 
-  
   const getButtonClass = (isActive: boolean) => {
     return `size-8 p-0 transition-colors ${
       isActive
@@ -147,12 +157,21 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
     }`
   }
 
+  const lastCompletion = useRef("")
+
+  useEffect(() => {
+    if (!completion || !editor) return
+    const diff = completion.slice(lastCompletion.current.length)
+    lastCompletion.current = completion
+    editor.commands.insertContent(diff)
+  }, [completion, editor])
+
   if (!editor) {
     return <div>Loading editor...</div>
   }
 
   return (
-    <div className="text-card-foreground  flex w-full max-w-7xl flex-1 flex-col overflow-hidden border bg-black">
+    <div className="text-card-foreground flex w-full max-w-7xl flex-1 flex-col overflow-hidden border bg-black">
       {/* Toolbar */}
       <div className="bg-muted/20 flex items-center gap-1 border-b p-2">
         {/* Undo/Redo */}
@@ -235,7 +254,9 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
                 editor.chain().focus().setHeading({ level: 1 }).run()
               }
               className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
-                editor.isActive("heading", { level: 1 }) ? "bg-blue-600 text-white" : ""
+                editor.isActive("heading", { level: 1 })
+                  ? "bg-blue-600 text-white"
+                  : ""
               }`}
             >
               Heading 1
@@ -245,7 +266,9 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
                 editor.chain().focus().setHeading({ level: 2 }).run()
               }
               className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
-                editor.isActive("heading", { level: 2 }) ? "bg-blue-600 text-white" : ""
+                editor.isActive("heading", { level: 2 })
+                  ? "bg-blue-600 text-white"
+                  : ""
               }`}
             >
               Heading 2
@@ -255,7 +278,9 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
                 editor.chain().focus().setHeading({ level: 3 }).run()
               }
               className={`text-popover-foreground hover:bg-accent hover:text-accent-foreground ${
-                editor.isActive("heading", { level: 3 }) ? "bg-blue-600 text-white" : ""
+                editor.isActive("heading", { level: 3 })
+                  ? "bg-blue-600 text-white"
+                  : ""
               }`}
             >
               Heading 3
