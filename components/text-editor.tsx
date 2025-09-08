@@ -1,5 +1,6 @@
 "use client"
 
+import generateEmbeddings from "@/app/actions/embeddings"
 import { updateNoteById } from "@/app/actions/notes"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +38,7 @@ interface RichTextEditorProps {
 }
 
 const debounceUpdate = debounce((content: string, noteId: string) => {
+  generateEmbeddings(content)
   updateNoteById({ title: "", description: content, noteId: noteId! })
 }, 500)
 

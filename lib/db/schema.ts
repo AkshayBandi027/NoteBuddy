@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid, json, jsonb } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, boolean, uuid, jsonb } from "drizzle-orm/pg-core"
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -60,6 +60,8 @@ export const verification = pgTable("verification", {
   ),
 })
 
+
+// need to add a column for vector embeddings !
 export const note = pgTable("note", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id")
