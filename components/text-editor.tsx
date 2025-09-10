@@ -39,7 +39,6 @@ interface RichTextEditorProps {
 
 const debounceUpdate = debounce(async (content: string, noteId: string) => {
   const embedding = await generateEmbeddings(content)
-  console.log(`embedding --`, embedding)
   updateNoteById({
     title: "",
     description: content,
@@ -195,7 +194,6 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
     return <div>Loading editor...</div>
   }
 
-  console.log(`summary --`, summary)
 
   return (
     <div className="text-card-foreground flex w-full max-w-7xl flex-1 flex-col overflow-hidden rounded-xs border bg-black">
