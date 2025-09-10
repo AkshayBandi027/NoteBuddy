@@ -37,9 +37,15 @@ interface RichTextEditorProps {
   noteId?: string
 }
 
-const debounceUpdate = debounce((content: string, noteId: string) => {
-  generateEmbeddings(content)
-  updateNoteById({ title: "", description: content, noteId: noteId! })
+const debounceUpdate = debounce(async (content: string, noteId: string) => {
+  const embedding = await generateEmbeddings(content)
+  console.log(`embedding --`, embedding)
+  updateNoteById({
+    title: "",
+    description: content,
+    noteId: noteId!,
+    embeddings: embedding,
+  })
 }, 500)
 
 const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {

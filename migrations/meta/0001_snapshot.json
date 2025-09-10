@@ -1,6 +1,6 @@
 {
-  "id": "7cd0a302-d000-453a-9a24-2ee6f4a3ee8b",
-  "prevId": "6cd66fe3-3cfa-45f0-becb-328a788788ff",
+  "id": "b7b369c3-7768-40cc-a987-6b202b4c5a67",
+  "prevId": "7cd0a302-d000-453a-9a24-2ee6f4a3ee8b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -135,6 +135,12 @@
         "description": {
           "name": "description",
           "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "embeddings": {
+          "name": "embeddings",
+          "type": "vector(1536)",
           "primaryKey": false,
           "notNull": false
         },

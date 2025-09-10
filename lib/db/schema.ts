@@ -1,4 +1,12 @@
-import { pgTable, text, timestamp, boolean, uuid, jsonb } from "drizzle-orm/pg-core"
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  uuid,
+  jsonb,
+  vector,
+} from "drizzle-orm/pg-core"
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -60,7 +68,6 @@ export const verification = pgTable("verification", {
   ),
 })
 
-
 // need to add a column for vector embeddings !
 export const note = pgTable("note", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -69,6 +76,7 @@ export const note = pgTable("note", {
     .references(() => user.id, { onDelete: "cascade" }),
   title: text("title"),
   description: jsonb("description"),
+  embeddings: vector("embeddings", { dimensions: 1536 }),
   createdAt: timestamp("created_at").$defaultFn(
     () => /* @__PURE__ */ new Date(),
   ),

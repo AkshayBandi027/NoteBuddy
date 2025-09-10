@@ -57,10 +57,12 @@ export const updateNoteById = async ({
   title,
   description,
   noteId,
+  embeddings,
 }: {
   title: string
   description: string
   noteId: string
+  embeddings: any
 }) => {
   const session = await verifySession()
   if (!session) {
@@ -70,8 +72,9 @@ export const updateNoteById = async ({
   await db
     .update(note)
     .set({
-      title,
+      title: title || "Untitled",
       description,
+      embeddings,
     })
     .where(and(eq(note.userId, session.userId), eq(note.id, noteId)))
 }
