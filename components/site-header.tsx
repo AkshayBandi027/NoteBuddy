@@ -10,6 +10,7 @@ import { useParams, usePathname } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ThemeToggler } from "./theme-toggler"
 import { Input } from "./ui/input"
+import Search from "./search"
 
 export function SiteHeader() {
   const pathname = usePathname()
@@ -148,6 +149,7 @@ export function SiteHeader() {
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <div className="min-w-0 flex-1">{renderTitle()}</div>
+        <Search />
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggler />
         </div>
