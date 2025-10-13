@@ -6,7 +6,6 @@ import { sql, and, cosineDistance, lt } from "drizzle-orm"
 
 export const searchNotes = async (query: string) => {
   if (!query) return
-
   const queryEmbeddings = await generateEmbeddings(query)
 
   const similarity = sql<number>`${cosineDistance(note.embeddings, queryEmbeddings!)}`
@@ -19,7 +18,7 @@ export const searchNotes = async (query: string) => {
       similarity,
     })
     .from(note)
-    .where(lt(similarity, 0.3))
+    .where(lt(similarity, 0.7))
     .orderBy(similarity)
     .limit(10)
 
