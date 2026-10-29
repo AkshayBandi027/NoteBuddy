@@ -1,7 +1,15 @@
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { db } from "../db"
 import { nextCookies } from "better-auth/next-js"
+import { db } from "../db"
+import { env, isGoogleAuthEnabled } from "../env"
+
+const trustedOrigins = Array.from(
+  new Set([
+    env.BETTER_AUTH_URL,
+    ...(process.env.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
+  ]),
+)
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -10,13 +18,17 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    },
-  },
+  socialProviders: isGoogleAuthEnabled
+    ? {
+        google: {
+          clientId: env.GOOGLE_CLIENT_ID!,
+          clientSecret: env.GOOGLE_CLIENT_SECRET!,
+        },
+      }
+    : undefined,
   plugins: [nextCookies()],
-  trustedOrigins: ["http://localhost:3000"],
+  trustedOrigins,
   basePath: "/api/auth",
 })
+
+export { isGoogleAuthEnabled }

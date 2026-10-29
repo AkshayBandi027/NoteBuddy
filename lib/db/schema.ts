@@ -6,6 +6,7 @@ import {
   uuid,
   jsonb,
   vector,
+  index,
 } from "drizzle-orm/pg-core"
 
 export const user = pgTable("user", {
@@ -68,19 +69,31 @@ export const verification = pgTable("verification", {
   ),
 })
 
-// need to add a column for vector embeddings !
-export const note = pgTable("note", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  title: text("title"),
-  description: jsonb("description"),
-  embeddings: vector("embeddings", { dimensions: 1536 }),
-  createdAt: timestamp("created_at").$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
-  updatedAt: timestamp("updated_at").$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
-})
+export const note = pgTable(
+  "note",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title"),
+    // Tiptap document JSON. Legacy rows may contain an HTML string.
+    description: jsonb("description"),
+    // Plain-text projection used for previews and search snippets.
+    contentText: text("content_text"),
+    embeddings: vector("embeddings", { dimensions: 1536 }),
+    createdAt: timestamp("created_at")
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    updatedAt: timestamp("updated_at")
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  table => [
+    index("note_user_id_idx").on(table.userId),
+    index("note_embeddings_hnsw_idx").using(
+      "hnsw",
+      table.embeddings.op("vector_cosine_ops"),
+    ),
+  ],
+)

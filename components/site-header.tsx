@@ -1,13 +1,12 @@
 "use client"
 
-import { getNoteById, updateNoteById } from "@/app/actions/notes"
+import { getNoteById, updateNoteTitle } from "@/app/actions/notes"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { queryClient } from "@/lib/providers"
-import { debounce } from "@/lib/utils"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useParams, usePathname } from "next/navigation"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ThemeToggler } from "./theme-toggler"
 import { Input } from "./ui/input"
 import Search from "./search"
@@ -22,11 +21,7 @@ export function SiteHeader() {
   const noteId = params?.id as string
   const isNotePage = pathname?.includes("/dashboard/notes/")
 
-  const {
-    data: note,
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: note } = useQuery({
     queryKey: ["note", noteId],
     queryFn: async () => {
       if (!noteId) return null
@@ -37,34 +32,34 @@ export function SiteHeader() {
   })
 
   const mutation = useMutation({
-    mutationFn: updateNoteById,
+    mutationFn: updateNoteTitle,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["note", noteId] })
       setIsEditing(false)
     },
   })
 
-  const debounceUpdate = useCallback(
-    debounce(async (title: string) => {
-      if (!noteId || !note) return
+  const titleSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-      mutation.mutate({
-        title,
-        description: note.description as string,
-        noteId,
-        embeddings: note.embeddings,
-      })
-    }, 800),
-    [noteId, note?.description, note?.embeddings, mutation.mutate],
-  )
+  useEffect(() => {
+    return () => {
+      if (titleSaveTimeout.current) clearTimeout(titleSaveTimeout.current)
+    }
+  }, [])
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value
     setNoteTitle(newTitle)
 
-    if (newTitle.trim() && newTitle !== note?.title) {
-      debounceUpdate(newTitle)
-    }
+    if (!noteId) return
+
+    if (titleSaveTimeout.current) clearTimeout(titleSaveTimeout.current)
+
+    if (!newTitle.trim() || newTitle === note?.title) return
+
+    titleSaveTimeout.current = setTimeout(() => {
+      mutation.mutate({ title: newTitle, noteId })
+    }, 800)
   }
 
   const handleClick = () => {

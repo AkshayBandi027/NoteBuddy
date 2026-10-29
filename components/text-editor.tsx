@@ -1,7 +1,10 @@
 "use client"
 
-import generateEmbeddings from "@/app/actions/embeddings"
-import { updateNoteById } from "@/app/actions/notes"
+import {
+  deleteNoteById,
+  updateNoteContent,
+  updateNoteEmbedding,
+} from "@/app/actions/notes"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -28,29 +31,34 @@ import {
   ListOrdered,
   Redo,
   Strikethrough,
+  Trash2,
   Undo,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
 interface RichTextEditorProps {
-  content?: JSONContent[]
+  content?: JSONContent | string
   noteId?: string
 }
 
-const debounceUpdate = debounce(async (content: string, noteId: string) => {
-  const embedding = await generateEmbeddings(content)
-  updateNoteById({
-    title: "",
-    description: content,
-    noteId: noteId!,
-    embeddings: embedding,
-  })
-}, 500)
+const debounceSave = debounce(
+  async (content: JSONContent, contentText: string, noteId: string) => {
+    await updateNoteContent({ noteId, content, contentText })
+  },
+  800,
+)
+
+const debounceEmbed = debounce(async (noteId: string) => {
+  await updateNoteEmbedding({ noteId })
+}, 3000)
 
 const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
+  const router = useRouter()
   const [summary, setSummary] = useState("")
+  const [isDeleting, setIsDeleting] = useState(false)
   const { complete, completion } = useCompletion({
-    api: `http://localhost:3000/api/completion`,
+    api: "/api/completion",
   })
 
   const customShortcuts = Extension.create({
@@ -80,10 +88,10 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
     editable: true,
     injectCSS: false,
     onUpdate: ({ editor }) => {
-      const content = editor.getHTML()
-      if (noteId) {
-        debounceUpdate(content, noteId)
-      }
+      if (!noteId) return
+
+      debounceSave(editor.getJSON(), editor.getText(), noteId)
+      debounceEmbed(noteId)
     },
     content: content ?? {
       type: "doc",
@@ -167,18 +175,42 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
 
   const summarize = async () => {
     const content = editor?.getText()
+    if (!content?.trim()) return
 
-    const result = await fetch(`/api/summarize`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        content,
-      }),
-    })
-    const response = await result.json()
-    setSummary(response.summary)
+    try {
+      const result = await fetch(`/api/summarize`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content,
+        }),
+      })
+
+      if (!result.ok) throw new Error("Failed to summarize note")
+
+      const response = await result.json()
+      setSummary(response.summary)
+    } catch (error) {
+      console.error(error)
+      setSummary("Could not summarize this note. Please try again.")
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!noteId || isDeleting) return
+    if (!window.confirm("Delete this note? This cannot be undone.")) return
+
+    setIsDeleting(true)
+    try {
+      await deleteNoteById(noteId)
+      router.push("/dashboard")
+      router.refresh()
+    } catch (error) {
+      console.error(error)
+      setIsDeleting(false)
+    }
   }
 
   const lastCompletion = useRef("")
@@ -193,7 +225,6 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
   if (!editor) {
     return <div>Loading editor...</div>
   }
-
 
   return (
     <div className="text-card-foreground flex w-full max-w-7xl flex-1 flex-col overflow-hidden rounded-xs border bg-black">
@@ -346,9 +377,20 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
           <div className="bg-border mx-1 h-6 w-px" />
         </div>
 
-        <Button variant="outline" className="mr-2" onClick={summarize}>
-          Summarize
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            onClick={handleDelete}
+            disabled={isDeleting || !noteId}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
+          <Button variant="outline" onClick={summarize}>
+            Summarize
+          </Button>
+        </div>
       </div>
 
       {/* Editor Content */}

@@ -1,8 +1,9 @@
+import Link from "next/link"
 import { Suspense } from "react"
+
 import { getNotes } from "../actions/notes"
 import { SkeletonCard } from "@/components/skeleton-card"
 import AddNote from "./add-note"
-import Link from "next/link"
 
 export default async function Page() {
   const notes = await getNotes()
@@ -19,27 +20,31 @@ export default async function Page() {
       </div>
 
       <Suspense fallback={<LoadingSkeleton />}>
-        <div className="flex flex-wrap items-center justify-start gap-4 px-4 py-2">
-          {notes.map(note => (
-            <Link href={`/dashboard/notes/${note.id}`} key={note.id}>
-              <div
-                key={note.id}
-                className="border-b-muted hover:bg-accent/30 flex h-40 w-72 cursor-pointer flex-col gap-2 overflow-hidden rounded-sm border-1 p-4 hover:shadow-md"
-              >
-                <h3 className="text-md font-bold tracking-wide">
-                  {note.title || "Untitled"}
-                </h3>
+        {notes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 px-4 py-16 text-center">
+            <h3 className="text-lg font-semibold">No notes yet</h3>
+            <p className="text-muted-foreground text-sm">
+              Create your first note to get started.
+            </p>
+            <AddNote />
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-start gap-4 px-4 py-2">
+            {notes.map(note => (
+              <Link href={`/dashboard/notes/${note.id}`} key={note.id}>
+                <div className="border-b-muted hover:bg-accent/30 flex h-40 w-72 cursor-pointer flex-col gap-2 overflow-hidden rounded-sm border-1 p-4 hover:shadow-md">
+                  <h3 className="text-md font-bold tracking-wide">
+                    {note.title || "Untitled"}
+                  </h3>
 
-                <p
-                  dangerouslySetInnerHTML={{
-                    __html: note.description as string,
-                  }}
-                  className="text-sm font-normal"
-                ></p>
-              </div>
-            </Link>
-          ))}
-        </div>
+                  <p className="text-muted-foreground line-clamp-4 text-sm font-normal whitespace-pre-wrap">
+                    {note.contentText?.trim() || "No content yet"}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </Suspense>
     </main>
   )

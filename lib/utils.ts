@@ -5,12 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function debounce(fn: Function, delay: number) {
-  let timeoutId: NodeJS.Timeout | null = null
-  return function (this: unknown, ...args: any[]) {
+export function debounce<TArgs extends unknown[]>(
+  fn: (...args: TArgs) => unknown,
+  delay: number,
+) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+  return (...args: TArgs) => {
     if (timeoutId) clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => {
-      fn.apply(this, args)
-    }, delay)
+    timeoutId = setTimeout(() => fn(...args), delay)
   }
 }
