@@ -1,18 +1,20 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
 import { useMutation } from "@tanstack/react-query"
 import { Loader2Icon, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
+
+import { Button } from "@/components/ui/button"
 import { createNote } from "../actions/notes"
 
 export default function AddNote() {
+  const router = useRouter()
+
   const mutation = useMutation({
-    mutationFn: async () => {
-      const noteId = await createNote()
-      return noteId
-    },
+    mutationFn: createNote,
     onSuccess: noteId => {
-      console.log(`Note created successfully`)
+      router.push(`/dashboard/notes/${noteId}`)
+      router.refresh()
     },
     onError: error => {
       console.error(`Error creating note: ${error}`)

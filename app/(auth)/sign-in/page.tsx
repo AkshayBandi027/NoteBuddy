@@ -2,6 +2,8 @@ import { GalleryVerticalEnd } from "lucide-react"
 
 import { LoginForm } from "@/components/login-form"
 
+import { isGoogleAuthEnabled } from "@/lib/auth"
+
 export default function SignIn() {
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
@@ -16,17 +18,11 @@ export default function SignIn() {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
-            <LoginForm />
+            <LoginForm showGoogleAuth={isGoogleAuthEnabled} />
           </div>
         </div>
       </div>
-      <div className="bg-muted relative hidden lg:block">
-        <img
-          src="/placeholder.svg"
-          alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-        />
-      </div>
+      <div className="from-primary/20 via-background to-background relative hidden bg-gradient-to-br lg:block" />
     </div>
   )
 }
