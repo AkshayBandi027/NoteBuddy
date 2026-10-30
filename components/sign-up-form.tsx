@@ -27,7 +27,6 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { authClient } from "@/lib/auth/client"
-import { signUp } from "@/app/actions/auth"
 import Link from "next/link"
 import { useMutation } from "@tanstack/react-query"
 
@@ -46,14 +45,15 @@ export function SignupForm({
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
-      await signUp(values)
-      // await auth.api.signUpEmail({
-      //   body: {
-      //     email: values.email,
-      //     password: values.password,
-      //     name: values.username,
-      //   },
-      // })
+      const { error } = await authClient.signUp.email({
+        email: values.email,
+        password: values.password,
+        name: values.username,
+      })
+
+      if (error) {
+        throw new Error(error.message || "Failed to create Account.")
+      }
     },
     onSuccess: () => {
       toast.success("Account created Successfully")

@@ -29,7 +29,6 @@ import { Loader2 } from "lucide-react"
 import { authClient } from "@/lib/auth/client"
 import Link from "next/link"
 import { useMutation } from "@tanstack/react-query"
-import { signIn } from "@/app/actions/auth"
 
 const formSchema = z.object({
   email: z.email(),
@@ -45,13 +44,14 @@ export function LoginForm({
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
-      // await auth.api.signInEmail({
-      //   body: {
-      //     email: values.email,
-      //     password: values.password,
-      //   },
-      // })
-      await signIn(values)
+      const { error } = await authClient.signIn.email({
+        email: values.email,
+        password: values.password,
+      })
+
+      if (error) {
+        throw new Error(error.message || "Failed to log in.")
+      }
     },
     onSuccess: () => {
       toast.success("Logged in Successfully")
