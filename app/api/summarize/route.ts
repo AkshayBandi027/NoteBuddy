@@ -1,18 +1,17 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider"
-import { generateText } from "ai"
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
 import { auth } from "@/lib/auth"
-import { env } from "@/lib/env"
 import { rateLimit } from "@/lib/rate-limit"
+import { generateText } from "ai"
+import { env } from "@/lib/env"
+import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 
 export const maxDuration = 30
 
 const openRouter = createOpenRouter({
   apiKey: env.OPEN_ROUTER_API_KEY,
 })
-
 const bodySchema = z.object({
   content: z.string().trim().min(1).max(20_000),
 })
@@ -44,19 +43,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 })
   }
 
-  const result = await generateText({
-    model: openRouter.chat(env.OPENROUTER_MODEL),
-    messages: [
-      {
-        role: "system",
-        content: `You are helpful AI that summarizes text consicely.`,
-      },
-      {
-        role: "user",
-        content: `Summarize the following text in a concise manner ##${parsed.data.content}##`,
-      },
-    ],
-  })
+  try {
+    const result = await generateText({ 
+      model: openRouter.chat(env.OPENROUTER_MODEL),
+      messages: [
+        {
+          role: "system",
+          content: `You are helpful AI that summarizes text consicely.`,
+        },
+        {
+          role: "user",
+          content: `Summarize the following text in a concise manner ##${parsed.data.content}##`,
+        },
+      ],
+    })
 
-  return NextResponse.json({ summary: result.text })
+    return NextResponse.json({ summary: result.text.trim() })
+  } catch (error) {
+    console.error("Summarize failed", error)
+    return NextResponse.json(
+      { error: "Could not summarize this note. Please try again." },
+      { status: 502 },
+    )
+  }
 }

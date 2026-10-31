@@ -9,8 +9,12 @@ interface Params {
   id: string
 }
 
-export default async function NotePage({ params }: { params: Params }) {
-  const noteId = (await params).id as string
+export default async function NotePage({
+  params,
+}: {
+  params: Promise<Params>
+}) {
+  const { id: noteId } = await params
   const note = await getNoteById(noteId)
 
   if (!note) {

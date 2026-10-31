@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { debounce } from "@/lib/utils"
 import { useCompletion } from "@ai-sdk/react"
+import { useMutation } from "@tanstack/react-query"
 import { Extension } from "@tiptap/core"
 import {
   EditorContent,
@@ -36,6 +37,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
+import { Spinner } from "./ui/spinner"
 
 interface RichTextEditorProps {
   content?: JSONContent | string
@@ -173,11 +175,14 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
     }`
   }
 
-  const summarize = async () => {
-    const content = editor?.getText()
-    if (!content?.trim()) return
+  // const summarize = async () => {
+  //   const content = editor?.getText()
+  //   if (!content?.trim()) return
 
-    try {
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: async () => {
+      const content = editor?.getText()
+      if (!content?.trim()) return
       const result = await fetch(`/api/summarize`, {
         method: "POST",
         headers: {
@@ -187,16 +192,38 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
           content,
         }),
       })
-
-      if (!result.ok) throw new Error("Failed to summarize note")
-
       const response = await result.json()
-      setSummary(response.summary)
-    } catch (error) {
+      return response.summary
+    },
+    onSuccess: (response: string) => {
+      setSummary(response)
+    },
+    onError: error => {
       console.error(error)
-      setSummary("Could not summarize this note. Please try again.")
-    }
-  }
+      setSummary(`could not summarize this note. Please try again`)
+    },
+  })
+
+  //   try {
+  //     const result = await fetch(`/api/summarize`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         content,
+  //       }),
+  //     })
+
+  //     if (!result.ok) throw new Error("Failed to summarize note")
+
+  //     const response = await result.json()
+  //     setSummary(response.summary)
+  //   } catch (error) {
+  //     console.error(error)
+  //     setSummary("Could not summarize this note. Please try again.")
+  //   }
+  // }
 
   const handleDelete = async () => {
     if (!noteId || isDeleting) return
@@ -387,9 +414,20 @@ const RichTextEditor = ({ content, noteId }: RichTextEditorProps) => {
             <Trash2 className="h-4 w-4" />
             Delete
           </Button>
-          <Button variant="outline" onClick={summarize}>
-            Summarize
-          </Button>
+
+          {isPending ? (
+            <Button variant="outline" disabled>
+              <Spinner
+                className="mr-2 h-4 w-4 animate-spin"
+                data-icon="inline-start"
+              />
+              Generating
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => mutate()}>
+              Summarize
+            </Button>
+          )}
         </div>
       </div>
 

@@ -7,7 +7,7 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
   GOOGLE_GENAI_KEY: z.string().min(1, "GOOGLE_GENAI_KEY is required"),
   OPEN_ROUTER_API_KEY: z.string().min(1, "OPEN_ROUTER_API_KEY is required"),
-  OPENROUTER_MODEL: z.string().default("google/gemma-3-27b-it:free"),
+  OPENROUTER_MODEL: z.string().default("dots-studio/dots-3-note-preview:free"),
   EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
